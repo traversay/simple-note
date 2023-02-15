@@ -118,7 +118,7 @@ if (!empty($_GET['dl'])) {
 </head>
 
 <body>
-  <div class="container">
+  <div class="container"><!-- { -->
     <div class="page-header">
       <h2> Send a new note </h2>
     </div>
@@ -134,18 +134,18 @@ if (!empty($_GET['dl'])) {
 	<button class="btn btn-success" name="new" type="submit"><span class="fa fa-paper-plane mr-2"></span>Send</button>
       </div>
     </form>
-  </div>
+  </div><!-- } container -->
 
 <?php
     if (!empty($notes->fetchNotes())):
         $notes = $notes->fetchNotes();
 ?>
 
-  <div class="container mt-5" id="notes">
+  <div class="container mt-5" id="notes"><!-- { -->
     <div class="page-header">
       <h2>Previously sent</h2>
     </div>
-    <div class="table-responsive">
+    <div class="table-responsive"><!-- { -->
       <table class="table table-hover">
 	<thead>
 	  <tr>
@@ -169,14 +169,16 @@ if (!empty($_GET['dl'])) {
 		<a class="btn btn-danger btn-sm" title="Delete this note" onclick="deleteNote(<?= $row['ID'] ?>)"><span class="fa fa-trash-alt"></span></a>
 		<a class="btn btn-info btn-sm" title="Download this note" href="?dl=<?= $row['ID'] ?>" target="_blank"><span class="fa fa-download"></span></a>
 	      </div>
-	      <div class="modal fade" id="edit<?= $row['ID'] ?>" tabindex="-1" aria-labelledby="edit<?= $row['ID'] ?>" role="dialog" aria-hidden="true">
-		<div class="modal-dialog modal-lg">
-		  <div class="modal-content">
-		    <div class="modal-header">
+
+	      <div class="modal fade" id="edit<?= $row['ID'] ?>" tabindex="-1" aria-labelledby="edit<?= $row['ID'] ?>" role="dialog" aria-hidden="true"><!-- { -->
+		<div class="modal-dialog modal-lg"><!-- { -->
+		  <div class="modal-content"><!-- { -->
+		    <div class="modal-header"><!-- { -->
 		      <h4 class="modal-title">Edit note</h4>
 		      <button type="button" class="close" data-dismiss="modal">&times;</button>
-		    </div>
-		    <div class="modal-body">
+		    </div><!-- } modal-header -->
+
+		    <div class="modal-body"><!-- { -->
 		      <form role="form" method="POST" id="edit-form-<?= $row['ID'] ?>">
 			<div class="form-group">
 			  <input class="form-control" type="text" placeholder="Title" name="title" value="<?= htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8') ?>">
@@ -187,26 +189,27 @@ if (!empty($_GET['dl'])) {
 			<input type="hidden" name="id" value="<?= $row['ID'] ?>">
 			<input type="hidden" name="edit" value="1">
 		      </form>
-		    </div>
-		    <div class="modal-footer">
+		    </div><!-- } modal-body -->
+
+		    <div class="modal-footer"><!-- { -->
 		      <div class="btn-group pull-right">
 			<button class="btn btn-success" name="edit" type="submit" form="edit-form-<?= $row['ID'] ?>">
-			  <span class="fa fa-save mr-2"></span>
-			  Save
+			  <span class="fa fa-save mr-2"></span> Save
 			</button>
 		      </div>
-		    </div>
-		  </div>
-		</div>
-	      </div>
+		    </div><!-- } modal-footer -->
+		  </div><!-- } modal-content -->
+		</div><!-- } modal-dialog -->
+	      </div><!-- } modal -->
+
 	    </td>
 	  </tr>
 <?php endforeach; ?>
 	</tbody>
       </table>
-    </div>
+    </div><!-- } table-responsive -->
 <?php endif; ?>
-  </div>
+  </div><!-- } container -->
 
   <script type="text/javascript">
     function deleteNote(id) {
