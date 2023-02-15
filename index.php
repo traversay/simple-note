@@ -105,11 +105,10 @@ if (!empty($_GET['dl'])) {
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple Note</title>
+  <title>Simple Notes</title>
   <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootswatch/4.5.2/flatly/bootstrap.min.css">
   <script src="//code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/js/bootstrap.min.js"></script>
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
   <style>
     textarea {
 	resize: vertical; /* allow only vertical stretch */
@@ -130,8 +129,8 @@ if (!empty($_GET['dl'])) {
 	<textarea class="form-control" rows="5" placeholder="What do you have in mind?" name="content" autofocus required></textarea>
       </div>
       <div class="btn-group float-right">
-	<button class="btn btn-danger" type="reset"><span class="fa fa-times mr-2"></span>Clear</button>
-	<button class="btn btn-success" name="new" type="submit"><span class="fa fa-paper-plane mr-2"></span>Save</button>
+	<button class="btn btn-danger" type="reset">Clear</button>
+	<button class="btn btn-success" name="new" type="submit">Save</button>
       </div>
     </form>
   </div><!-- } container -->
@@ -165,9 +164,9 @@ if (!empty($_GET['dl'])) {
 	    <td class="text-right"><?= date('d/m/Y', strtotime($row['created'])) ?></td>
 	    <td class="text-right">
 	      <div class="btn-group">
-		<button type="button" class="btn btn-secondary btn-sm" title="Edit this note" data-toggle="modal" data-target="#edit<?= $row['ID'] ?>"><span class="fa fa-edit"></span></button>
-		<a class="btn btn-danger btn-sm" title="Delete this note" onclick="deleteNote(<?= $row['ID'] ?>)"><span class="fa fa-trash-alt"></span></a>
-		<a class="btn btn-info btn-sm" title="Download this note" href="?dl=<?= $row['ID'] ?>" target="_blank"><span class="fa fa-download"></span></a>
+		<button type="button" class="btn btn-secondary btn-sm" title="Edit this note" data-toggle="modal" data-target="#edit<?= $row['ID'] ?>">Edit</button>
+		<a class="btn btn-danger btn-sm" title="Delete this note" onclick="deleteNote(<?= $row['ID'] ?>)">Del</a>
+		<a class="btn btn-info btn-sm" title="Download this note" href="?dl=<?= $row['ID'] ?>" target="_blank">Get</a>
 	      </div>
 
 	      <div class="modal fade" id="edit<?= $row['ID'] ?>" tabindex="-1" aria-labelledby="edit<?= $row['ID'] ?>" role="dialog" aria-hidden="true"><!-- { -->
@@ -193,9 +192,7 @@ if (!empty($_GET['dl'])) {
 
 		    <div class="modal-footer"><!-- { -->
 		      <div class="btn-group pull-right">
-			<button class="btn btn-success" name="edit" type="submit" form="edit-form-<?= $row['ID'] ?>">
-			  <span class="fa fa-save mr-2"></span> Save
-			</button>
+			<button class="btn btn-success" name="edit" type="submit" form="edit-form-<?= $row['ID'] ?>">Save</button>
 		      </div>
 		    </div><!-- } modal-footer -->
 		  </div><!-- } modal-content -->
