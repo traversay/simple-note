@@ -120,7 +120,7 @@ if (!empty($_GET['dl'])) {
 <body>
   <div class="container"><!-- { -->
     <div class="page-header">
-      <h2> Send a new note </h2>
+      <h2> Save a note </h2>
     </div>
     <form role="form" action="index.php" method="POST">
       <div class="form-group">
@@ -131,7 +131,7 @@ if (!empty($_GET['dl'])) {
       </div>
       <div class="btn-group float-right">
 	<button class="btn btn-danger" type="reset"><span class="fa fa-times mr-2"></span>Clear</button>
-	<button class="btn btn-success" name="new" type="submit"><span class="fa fa-paper-plane mr-2"></span>Send</button>
+	<button class="btn btn-success" name="new" type="submit"><span class="fa fa-paper-plane mr-2"></span>Save</button>
       </div>
     </form>
   </div><!-- } container -->
@@ -143,7 +143,7 @@ if (!empty($_GET['dl'])) {
 
   <div class="container mt-5" id="notes"><!-- { -->
     <div class="page-header">
-      <h2>Previously sent</h2>
+      <h2>Previously saved</h2>
     </div>
     <div class="table-responsive"><!-- { -->
       <table class="table table-hover">
