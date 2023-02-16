@@ -106,9 +106,9 @@ if (!empty($_GET['dl'])) {
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Simple Notes</title>
-  <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootswatch/4.5.2/flatly/bootstrap.min.css">
-  <script src="//code.jquery.com/jquery-3.5.1.min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/js/bootstrap.min.js"></script>
+  <script src="lib/jquery-3.5.1-min.js"></script>
+  <script src="lib/bootstrap-4.5.3-min.js"></script>
+  <link rel="stylesheet" href="lib/bootstrap-4.5.3-min.css">
   <style>
     textarea {
 	resize: vertical; /* allow only vertical stretch */
