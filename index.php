@@ -108,7 +108,7 @@ if (!empty($_GET['dl'])) {
   <title>Simple Notes</title>
   <script src="lib/jquery-3.5.1-min.js"></script>
   <script src="lib/bootstrap-4.5.3-min.js"></script>
-  <link rel="stylesheet" href="lib/bootstrap-4.5.3-min.css">
+  <link rel="stylesheet" href="lib/bootstrap-4.5.2-min.css">
   <style>
     textarea {
 	resize: vertical; /* allow only vertical stretch */
