@@ -1,103 +1,143 @@
 <?php
 
-// Core (class)
+# Core (class)
 class Notes {
 
     private $pdo;
 
     const dbFile = 'db.sqlite';
 
+    #	Create db and table if it does not exist
     function __construct() {
-        $this->pdo = new PDO('sqlite:'.self::dbFile);
-        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $this->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-        $this->pdo->exec('CREATE TABLE IF NOT EXISTS notes (
-        ID      INTEGER PRIMARY KEY AUTOINCREMENT,
-        title   TEXT NOT NULL,
-        content TEXT NOT NULL,
-        created DATETIME NOT NULL
-        );');
+	$this->pdo = new PDO('sqlite:'.self::dbFile);
+	$this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+	$this->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+	$this->pdo->exec('CREATE TABLE IF NOT EXISTS notes (
+	    ID      INTEGER PRIMARY KEY AUTOINCREMENT,
+	    title   TEXT NOT NULL,
+	    content TEXT NOT NULL,
+	    created DATETIME NOT NULL
+	);');
     }
 
-    public function fetchNotes($id = null) {
-        if ($id != null) {
-            $stmt = $this->pdo->prepare('SELECT title, content FROM notes WHERE id = :ID');
-            $stmt->bindParam(':ID', $id);
-            $stmt->execute();
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($result as $row) {
-                $title = $row['title'];
-                header("Content-type: text/plain; charset=utf-8");
-                header("Content-Disposition: attachment; filename=$title.txt");
-                echo $row['content'];
-                return;
-            }
-        } else {
-            $stmt = $this->pdo->query('SELECT * FROM notes ORDER BY created DESC');
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            return $result;
-        }
+    #	Get title/content for a given note ID or
+    #	    all-but-content for all notes
+    public function get($id = 0, $cmd = '') {
+	$res = null;
+	if ($id > 0) {	# Get a note
+	    $stmt = $this->pdo->prepare('SELECT title,content FROM notes WHERE ID = :id');
+	    $stmt->bindParam(':id', $id);
+	    $stmt->execute();
+	    $n = 0;
+	    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+		if ($n == 0) {
+		    if ($cmd == 'dl') {
+			header("Content-type: text/plain; charset=utf-8");
+			header("Content-Disposition: attachment; filename=$row[title].txt");
+			echo $row['content'];
+			flush();
+		    }
+		    else
+			$res = [ $row['title'], $row['content'] ];
+		}
+		$n++;
+	    }
+	    if ($n != 1)
+		Trace("get: $n notes with id=$id ?");
+	} else {	# All previous notes
+	    $stmt = $this->pdo->query('SELECT ID,title,created FROM notes ORDER BY created DESC');
+	    $res = $stmt->fetchAll(PDO::FETCH_ASSOC);
+	}
+	return $res;
     }
 
-    public function create($title, $content) {
-        $datetime = date('Y-m-d H:i:s');
-        $stmt = $this->pdo->prepare('INSERT INTO notes (title, content, created) VALUES (:title, :content, :created)');
-        $stmt->bindParam(':title', $title);
-        $stmt->bindParam(':content', $content);
-        $stmt->bindParam(':created', $datetime);
-        $stmt->execute();
+    #	Add (INSERT) or modify (UPDATE) a note
+    public function add_mod($id, $title, $content) {
+	Trace("id=$id title='$title' content='$content'");
+	if ($id == 0) {	# Add
+	    $datetime = date('Y-m-d H:i:s');
+	    $req = 'INSERT INTO notes (title, content, created) VALUES (:title, :content, :created)';
+	}
+	else		# Mod
+	    $req = 'UPDATE notes SET title = :title, content = :content WHERE ID = :id';
+
+	$stmt = $this->pdo->prepare($req);
+
+	if ($id > 0)	# Mod
+	    $stmt->bindParam(':id', $id);
+	else		# Add
+	    $stmt->bindParam(':created', $datetime);
+
+	$stmt->bindParam(':title', $title);
+	$stmt->bindParam(':content', $content);
+	$stmt->execute();
     }
 
-    public function delete($id) {
-        if ($id == 'all') {
-            $this->pdo->query('DELETE FROM notes; VACUUM');
-        } else {
-            $stmt = $this->pdo->prepare('DELETE FROM notes WHERE id = :ID');
-            $stmt->bindParam(':ID', $id);
-            $stmt->execute();
-        }
-    }
-
-    public function edit($id, $title, $content) {
-        $stmt = $this->pdo->prepare('UPDATE notes SET title = :title, content = :content WHERE id = :ID');
-        $stmt->bindParam(':ID', $id);
-        $stmt->bindParam(':title', $title);
-        $stmt->bindParam(':content', $content);
-        $stmt->execute();
+    #	Remove (DELETE) a note
+    public function del($id) {
+	if ($id > 0) {
+	    $stmt = $this->pdo->prepare('DELETE FROM notes WHERE ID = :id');
+	    $stmt->bindParam(':id', $id);
+	    $stmt->execute();
+	}
+	# else $this->pdo->query('DELETE FROM notes; VACUUM');
     }
 }
 
-// Init core (class)
-$notes = new Notes;
+#   Return text quoted for use in HTML
+function htmlText($txt)
+{
+    return htmlspecialchars($txt, ENT_QUOTES, 'UTF-8');
+}
 
-// Actions
-if (isset($_POST['new'])) {
-    $title = $_POST['title'];
-    $content = $_POST['content'];
-    $notes->create($title, $content);
-    header('Location: .');
+#   Return text quoted for use in Javascript
+function jsText($txt)
+{
+    return str_replace("\n", "\\n", trim(addslashes($txt)));
+}
+
+#   Write to 'trace.log' with timestamp
+function Trace($txt)
+{
+    file_put_contents('trace.log', date('Y-m-d H:i:s')." $txt\n", FILE_APPEND);
+}
+
+#  WARNING: we need to keep the / before $base, or $_POST will be empty
+$base = str_replace('.', '\.', basename($_SERVER['SCRIPT_NAME']));
+$Self = preg_replace("/$base$/", '', $_SERVER['SCRIPT_NAME']);
+
+# Init core (class)
+$Notes = new Notes;
+
+$Verb = 'Save';
+$Id = 0;	# Global mode (not modifying a note)
+$Title = '';
+$Content = '';
+
+# Actions
+#Trace("_POST = ".print_r($_POST, true)."_GET = ".print_r($_GET, true));
+if (isset($_POST['save']))
+{
+    $Notes->add_mod($_POST['id'], $_POST['title'], $_POST['content']);
+    header("Location: $Self");
     exit();
 }
-if (isset($_POST['edit'])) {
-    $id = $_POST['id'];
-    $title = $_POST['title'];
-    $content = $_POST['content'];
-    $notes->edit($id, $title, $content);
-    header('Location: .');
+elseif (isset($_GET['del'])) {
+    $Notes->del($_GET['del']);
+    header("Location: $Self");
     exit();
 }
-if (!empty($_GET['del'])) {
-    $id = $_GET['del'];
-    $notes->delete($id);
-    header('Location: .');
+elseif (isset($_GET['dl'])) {
+    $Notes->get($_GET['dl'], 'dl');	# Download note
     exit();
 }
-if (!empty($_GET['dl'])) {
-    $id = $_GET['dl'];
-    $notes->fetchNotes($id);
-    exit();
+elseif (isset($_GET['mod'])) {
+    $Id = $_GET['mod'];
+    list($Title, $Content) = $Notes->get($Id);	# Get note for editing
+    $Verb = 'Edit';
 }
 
+$Prev = $Notes->get();			# Get all previous notes (if any)
 ?>
 <!DOCTYPE html>
 <html>
@@ -117,103 +157,122 @@ if (!empty($_GET['dl'])) {
 </head>
 
 <body>
+  <script type="text/javascript">
+<?php if ($Id == 0) {?>
+    function modifyNote(id) {
+	if (document.forms.note.content.value != '')
+	    alert('You must save or clear the current note first');
+	else
+	    window.location = '?mod=' + id;
+    }
+
+    function deleteNote(id) {
+	if (confirm('Are you sure you want to delete this note?'))
+	    window.location = '?del=' + id;
+    }
+
+<?php }?>
+    function mod_chk(evt) {
+	var t = evt.target,
+	    f = document.forms.note;
+
+	console.debug('mod_chk:', t);
+	if (f.title.value != window.nTitle || f.content.value != window.nContent) {
+	    if (!confirm('Changes made to the note will be discarded'))
+	    {
+		if (t.type == 'reset')
+		    evt.preventDefault();
+		return;
+	    }
+	}
+	if (t.type != 'reset')
+	    window.location.replace('<?=$Self?>');
+    }
+
+    //	Javascript page-init
+    window.addEventListener('load', function() {
+	var f = document.forms.note;
+
+<?php if ($Id > 0) {?>
+	f.title.value = window.nTitle = "<?=jsText($Title)?>";
+	f.content.value = window.nContent = "<?=jsText($Content)?>";
+<?php } else {?>
+	window.nTitle = window.nContent = '';
+<?php }?>
+	f.clear.addEventListener('click', mod_chk);
+<?php if ($Id > 0) {?>
+	f.cancl.addEventListener('click', mod_chk);
+<?php }?>
+	f.addEventListener('submit', function(evt) {
+	    var f = evt.target;
+
+	    console.debug(evt, f.title.value, window.nTitle, f.content.value, window.nContent);
+	    if (f.title.value == window.nTitle && f.content.value == window.nContent) {
+		evt.preventDefault();
+		alert('The note was not modified');
+		window.location.replace('<?=$Self?>');
+	    }
+	});
+    });
+  </script>
   <div class="container"><!-- { -->
     <div class="page-header">
-      <h2> Save a note </h2>
+      <h2> <?=$Verb?> a note </h2>
     </div>
-    <form role="form" action="index.php" method="POST">
+
+    <form role="form" name="note" action="<?=$Self?>" method="POST">
       <div class="form-group">
 	<input class="form-control" type="text" placeholder="Title" name="title" required>
       </div>
       <div class="form-group">
-	<textarea class="form-control" rows="5" placeholder="What do you have in mind?" name="content" autofocus required></textarea>
+	<textarea class="form-control" rows="5" placeholder="What do you want to save?" name="content" autofocus required></textarea>
       </div>
       <div class="btn-group float-right">
-	<button class="btn btn-danger" type="reset">Clear</button>
-	<button class="btn btn-success" name="new" type="submit">Save</button>
+<?php if ($Id > 0) {?>
+	<button class="btn btn-info" type="button" name="cancl">Cancel</button>
+<?php }?>
+	<button class="btn btn-danger" type="reset" name="clear">Clear</button>
+	<button class="btn btn-success" type="submit" name="save">Save</button>
       </div>
+      <input type="hidden" name="id" value="<?=$Id?>">
     </form>
-  </div><!-- } container -->
+  </div><!-- } container (input) -->
 
-<?php
-    if (!empty($notes->fetchNotes())):
-        $notes = $notes->fetchNotes();
-?>
-
+<?php if ($Id == 0 && count($Prev) > 0) {?>
   <div class="container mt-5" id="notes"><!-- { -->
     <div class="page-header">
       <h2>Previously saved</h2>
     </div>
+
     <div class="table-responsive"><!-- { -->
       <table class="table table-hover">
 	<thead>
 	  <tr>
 	    <th>Name</th>
-	    <th class="text-right">Time</th>
 	    <th class="text-right">Date</th>
+	    <th class="text-right">Time</th>
 	    <th class="text-right">Actions<br></th>
 	  </tr>
 	</thead>
 	<tbody>
 	  <tr>
-<?php foreach ($notes as $row): ?>
-	    <td>
-	      <?= htmlspecialchars(substr($row['title'], 0, 15), ENT_QUOTES, 'UTF-8') ?>
-	    </td>
-	    <td class="text-right"><?= date('H:i', strtotime($row['created'])) ?></td>
-	    <td class="text-right"><?= date('d/m/Y', strtotime($row['created'])) ?></td>
+<?php foreach ($Prev as $row) {?>
+	    <td> <?=htmlText(substr($row['title'], 0, 15))?> </td>
+	    <td class="text-right"><?=date('d/m/Y', strtotime($row['created'])) ?></td>
+	    <td class="text-right"><?=date('H:i', strtotime($row['created'])) ?></td>
 	    <td class="text-right">
 	      <div class="btn-group">
-		<button type="button" class="btn btn-secondary btn-sm" title="Edit this note" data-toggle="modal" data-target="#edit<?= $row['ID'] ?>">Edit</button>
-		<a class="btn btn-danger btn-sm" title="Delete this note" onclick="deleteNote(<?= $row['ID'] ?>)">Del</a>
-		<a class="btn btn-info btn-sm" title="Download this note" href="?dl=<?= $row['ID'] ?>" target="_blank">Get</a>
+		<a class="btn btn-secondary btn-sm" title="Edit this note" onclick="modifyNote(<?=$row['ID']?>)">Edit</a>
+		<a class="btn btn-danger btn-sm" title="Delete this note" onclick="deleteNote(<?=$row['ID']?>)">Del</a>
+		<a class="btn btn-info btn-sm" title="Download this note" href="?dl=<?=$row['ID']?>" target="_blank">Get</a>
 	      </div>
-
-	      <div class="modal fade" id="edit<?= $row['ID'] ?>" tabindex="-1" aria-labelledby="edit<?= $row['ID'] ?>" role="dialog" aria-hidden="true"><!-- { -->
-		<div class="modal-dialog modal-lg"><!-- { -->
-		  <div class="modal-content"><!-- { -->
-		    <div class="modal-header"><!-- { -->
-		      <h4 class="modal-title">Edit note</h4>
-		      <button type="button" class="close" data-dismiss="modal">&times;</button>
-		    </div><!-- } modal-header -->
-
-		    <div class="modal-body"><!-- { -->
-		      <form role="form" method="POST" id="edit-form-<?= $row['ID'] ?>">
-			<div class="form-group">
-			  <input class="form-control" type="text" placeholder="Title" name="title" value="<?= htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8') ?>">
-			</div>
-			<div class="form-group">
-			  <textarea class="form-control" rows="5" placeholder="What do you have in mind?" name="content" required><?= htmlspecialchars($row['content'], ENT_QUOTES, 'UTF-8') ?></textarea>
-			</div>
-			<input type="hidden" name="id" value="<?= $row['ID'] ?>">
-			<input type="hidden" name="edit" value="1">
-		      </form>
-		    </div><!-- } modal-body -->
-
-		    <div class="modal-footer"><!-- { -->
-		      <div class="btn-group pull-right">
-			<button class="btn btn-success" name="edit" type="submit" form="edit-form-<?= $row['ID'] ?>">Save</button>
-		      </div>
-		    </div><!-- } modal-footer -->
-		  </div><!-- } modal-content -->
-		</div><!-- } modal-dialog -->
-	      </div><!-- } modal -->
-
 	    </td>
 	  </tr>
-<?php endforeach; ?>
+<?php	}?>
 	</tbody>
       </table>
     </div><!-- } table-responsive -->
-<?php endif; ?>
   </div><!-- } container -->
-
-  <script type="text/javascript">
-    function deleteNote(id) {
-	if (confirm('Are you sure you want to delete this note?')) {
-	     window.location = '?del=' + id;
-	}
-    }
-  </script>
+<?php }?>
 </body>
 </html>
