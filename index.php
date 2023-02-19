@@ -20,9 +20,9 @@ class Notes {
 	);');
     }
 
-    #	Get title/content for a given note ID or
-    #	    all-but-content for all notes
-    public function get($id = 0, $cmd = '') {
+    #	Get title/content for a given note $id or
+    #	    * for all notes if $id = 0
+    public function get($id = 0) {
 	$res = null;
 	if ($id > 0) {	# Get a note
 	    $stmt = $this->pdo->prepare('SELECT title,content FROM notes WHERE ID = :id');
@@ -30,22 +30,14 @@ class Notes {
 	    $stmt->execute();
 	    $n = 0;
 	    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-		if ($n == 0) {
-		    if ($cmd == 'dl') {
-			header("Content-type: text/plain; charset=utf-8");
-			header("Content-Disposition: attachment; filename=$row[title].txt");
-			echo $row['content'];
-			flush();
-		    }
-		    else
-			$res = [ $row['title'], $row['content'] ];
-		}
+		if ($n == 0)
+		    $res = [ $row['title'], $row['content'] ];
 		$n++;
 	    }
 	    if ($n != 1)
 		Trace("get: $n notes with id=$id ?");
 	} else {	# All previous notes
-	    $stmt = $this->pdo->query('SELECT ID,title,created FROM notes ORDER BY created DESC');
+	    $stmt = $this->pdo->query('SELECT * FROM notes ORDER BY created DESC');
 	    $res = $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
 	return $res;
@@ -170,10 +162,6 @@ elseif (isset($_GET['del'])) {
     header("Location: $Self");
     exit();
 }
-elseif (isset($_GET['dl'])) {
-    $Notes->get($_GET['dl'], 'dl');	# Download note
-    exit();
-}
 elseif (isset($_GET['mod'])) {
     $Id = $_GET['mod'];
     list($Title, $Content) = $Notes->get($Id);	# Get note for editing
@@ -235,6 +223,14 @@ $Prev = $Notes->get();			# Get all previous notes (if any)
     textarea {
 	resize: vertical; /* allow only vertical stretch */
     }
+    [data-tooltip]:before {
+	content:attr(data-tooltip); border:1px solid black; border-radius:2px;
+	padding:3px; color:black; background-color:#ffa; position:absolute;
+	margin-top:-2em; margin-left:-.9em; display:none;
+    }
+    .tip:before {
+	display:block;
+    }
   </style>
 </head>
 
@@ -251,6 +247,13 @@ $Prev = $Notes->get();			# Get all previous notes (if any)
     function deleteNote(id) {
 	if (confirm('Are you sure you want to delete this note?'))
 	    window.location = '?del=' + id;
+    }
+
+    function copyNote(obj) {
+	console.log(obj);
+	navigator.clipboard.writeText(window.Notes[obj.dataset.id]);
+	obj.classList.add('tip');
+	setTimeout(function(){obj.classList.remove('tip');}, 1000);
     }
 
 <?php }?>
@@ -295,6 +298,12 @@ $Prev = $Notes->get();			# Get all previous notes (if any)
 		window.location.replace('<?=$Self?>');
 	    }
 	});
+<?php if ($Id == 0) {?>
+    window.Notes = [];
+<?php foreach ($Prev as $row) {?>
+	window.Notes[<?=$row['ID']?>] = "<?=jsText($row['content'])?>";
+<?php }
+}?>
     });
   </script>
   <div class="container"><!-- { -->
@@ -346,7 +355,7 @@ $Prev = $Notes->get();			# Get all previous notes (if any)
 	      <div class="btn-group">
 		<a class="btn btn-secondary btn-sm" title="Edit this note" onclick="modifyNote(<?=$row['ID']?>)">Edit</a>
 		<a class="btn btn-danger btn-sm" title="Delete this note" onclick="deleteNote(<?=$row['ID']?>)">Delete</a>
-		<a class="btn btn-info btn-sm" title="Download this note" href="?dl=<?=$row['ID']?>" target="_blank">Get</a>
+		<a class="btn btn-info btn-sm" title="Copy this note to clipboard" data-id="<?=$row['ID']?>" data-tooltip="Copied!" onclick="copyNote(this)">Copy</a>
 	      </div>
 	    </td>
 	  </tr>
