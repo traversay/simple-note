@@ -5,6 +5,7 @@ This is a heavily modified version of https://github.com/artyuum/simple-note
 The modal has been removed, a password has been added and notes are copied to the clipboard instead of being downloaded. See `git log` for details.
 
 For a refactored version of the original application, see here : https://github.com/Robert430404/Simple-Note  
+
 Story
 --
 The firewall at my school was blocking services like iCloud/Evernote so I couldn't use such services whenever I had a new idea in mind.
