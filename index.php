@@ -96,10 +96,38 @@ function jsText($txt)
     return str_replace("\n", "\\n", trim(addslashes($txt)));
 }
 
+#   Return array element or default if missing
+function value($arr, $idx, $def = '')
+{
+    return isset($arr[$idx]) ? $arr[$idx] : $def;
+}
+
+#   Return as a string a dump of array arg.
+function Dump($arr)
+{
+    return str_replace("\n", "\n\t", trim(print_r($arr, true)));
+}
+
 #   Write to 'trace.log' with timestamp
 function Trace($txt)
 {
     file_put_contents('trace.log', date('Y-m-d H:i:s')." $txt\n", FILE_APPEND);
+}
+
+#   Return password if set in .pw, false otherwise
+function getPw()
+{
+    $pwFile = '.pw';
+
+    if (!file_exists($pwFile))
+	return false;
+    if (($pw = file_get_contents($pwFile)) === false)
+	return false;
+    $pw = trim($pw);
+    if ($pw == '')
+	return false;
+
+    return $pw;
 }
 
 #  WARNING: we need to keep the / before $base, or $_POST will be empty
@@ -114,9 +142,21 @@ $Id = 0;	# Global mode (not modifying a note)
 $Title = '';
 $Content = '';
 
+$Pw = getPw();
+$badPw = 'none';
+if ($Pw !== false)
+    session_start();
+
 # Actions
-#Trace("_POST = ".print_r($_POST, true)."_GET = ".print_r($_GET, true));
-if (isset($_POST['save']))
+#Trace("_POST = ".Dump($_POST).", _GET = ".Dump($_GET));
+if ($Pw !== false && isset($_POST['pass']))
+{
+    if ($_POST['pass'] == $Pw)
+	$_SESSION['logedIn'] = 1;
+    else
+	$badPw = 'block';
+}
+elseif (isset($_POST['save']))
 {
     $Notes->add_mod($_POST['id'], $_POST['title'], $_POST['content']);
     header("Location: $Self");
@@ -135,6 +175,45 @@ elseif (isset($_GET['mod'])) {
     $Id = $_GET['mod'];
     list($Title, $Content) = $Notes->get($Id);	# Get note for editing
     $Verb = 'Edit';
+}
+elseif (count($_POST) > 0)
+    Trace("unknown member in _POST = ".Dump($_POST));
+elseif (count($_GET) > 0)
+    Trace("unknown member in _GET = ".Dump($_GET));
+
+if ($Pw !== false && value($_SESSION, 'logedIn', 0) == 0)
+{?>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password needed</title>
+  <style>
+    .box  { font-family:sans-serif; font-size:14pt; margin-top:2em; margin-left:2em; }
+    .btn  { padding:.1em .5em; color:#fff; background-color:#3498db;
+	    border-color:#3498db; border-radius:.2em; }
+    .bad  { color:red; margin-top:1em; margin-left:4em; }
+    .mr1  { margin-right:.5em; }
+  </style>
+</head>
+<body>
+  <div class="box"><!-- { -->
+    <form role="form" action="<?=$Self?>" method="POST">
+      <label for="pw" class="mr1">Password:</label>
+      <input class="mr1" type="password" placeholder="Enter password" id="pw" name="pass" required>
+      <button class="btn" type="submit" name="enter">Enter</button>
+      <div id="bad" class="bad" style="display:<?=$badPw?>">Mot de passe invalide</div>
+    </form>
+  </div>
+  <script>
+    setTimeout(function() { document.getElementById('bad').style.display = 'none'; }, 1000);
+  </script>
+<body>
+</html>
+<?php
+    exit();
 }
 
 $Prev = $Notes->get();			# Get all previous notes (if any)
