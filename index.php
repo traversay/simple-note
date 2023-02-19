@@ -93,7 +93,7 @@ function htmlText($txt)
 #   Return text quoted for use in Javascript
 function jsText($txt)
 {
-    return str_replace("\n", "\\n", trim(addslashes($txt)));
+    return str_replace(["\n","\r"], ["\\n","\\r"], addslashes($txt));
 }
 
 #   Return array element or default if missing
@@ -152,9 +152,12 @@ if ($Pw !== false)
 if ($Pw !== false && isset($_POST['pass']))
 {
     if ($_POST['pass'] == $Pw)
+    {
 	$_SESSION['logedIn'] = 1;
-    else
-	$badPw = 'block';
+	header("Location: $Self");
+	exit();
+    }
+    $badPw = 'block';
 }
 elseif (isset($_POST['save']))
 {
@@ -342,7 +345,7 @@ $Prev = $Notes->get();			# Get all previous notes (if any)
 	    <td class="text-right">
 	      <div class="btn-group">
 		<a class="btn btn-secondary btn-sm" title="Edit this note" onclick="modifyNote(<?=$row['ID']?>)">Edit</a>
-		<a class="btn btn-danger btn-sm" title="Delete this note" onclick="deleteNote(<?=$row['ID']?>)">Del</a>
+		<a class="btn btn-danger btn-sm" title="Delete this note" onclick="deleteNote(<?=$row['ID']?>)">Delete</a>
 		<a class="btn btn-info btn-sm" title="Download this note" href="?dl=<?=$row['ID']?>" target="_blank">Get</a>
 	      </div>
 	    </td>
