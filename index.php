@@ -258,7 +258,7 @@ $Prev = $Notes->get();			# Get all previous notes (if any)
 	var t = evt.target,
 	    f = document.forms.note;
 
-	console.debug('mod_chk:', t);
+	console.log('mod_chk:', t);
 	if (f.title.value != window.nTitle || f.content.value != window.nContent) {
 	    if (!confirm('Changes made to the note will be discarded'))
 	    {
@@ -288,7 +288,7 @@ $Prev = $Notes->get();			# Get all previous notes (if any)
 	f.addEventListener('submit', function(evt) {
 	    var f = evt.target;
 
-	    console.debug(evt, f.title.value, window.nTitle, f.content.value, window.nContent);
+	    console.log(evt, f.title.value, window.nTitle, f.content.value, window.nContent);
 	    if (f.title.value == window.nTitle && f.content.value == window.nContent) {
 		evt.preventDefault();
 		alert('The note was not modified');
@@ -340,7 +340,7 @@ $Prev = $Notes->get();			# Get all previous notes (if any)
 	  <tr>
 <?php foreach ($Prev as $row) {?>
 	    <td> <?=htmlText(substr($row['title'], 0, 15))?> </td>
-	    <td class="text-right"><?=date('d/m/Y', strtotime($row['created'])) ?></td>
+	    <td class="text-right"><?=date('d-m-Y', strtotime($row['created'])) ?></td>
 	    <td class="text-right"><?=date('H:i', strtotime($row['created'])) ?></td>
 	    <td class="text-right">
 	      <div class="btn-group">
