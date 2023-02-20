@@ -1,1 +1,3 @@
 lib/*-min.* binary
+lib/*.ttf binary
+lib/*.woff2 binary
