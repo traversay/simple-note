@@ -172,6 +172,9 @@ elseif (count($_POST) > 0)
 elseif (count($_GET) > 0)
     Trace("unknown member in _GET = ".Dump($_GET));
 
+#
+#   Password Page
+#
 if ($Pw !== false && value($_SESSION, 'logedIn', 0) == 0)
 {?>
 <!DOCTYPE html>
@@ -197,7 +200,7 @@ if ($Pw !== false && value($_SESSION, 'logedIn', 0) == 0)
       <button class="btn" type="submit" name="enter">Enter</button>
       <div id="bad" class="bad" style="display:<?=$badPw?>">Mot de passe invalide</div>
     </form>
-  </div>
+  </div><!-- } -->
   <script>
     setTimeout(function() { document.getElementById('bad').style.display = 'none'; }, 1000);
   </script>
@@ -207,6 +210,9 @@ if ($Pw !== false && value($_SESSION, 'logedIn', 0) == 0)
     exit();
 }
 
+#
+#   Main page
+#
 $Prev = $Notes->get();			# Get all previous notes (if any)
 ?>
 <!DOCTYPE html>
@@ -216,9 +222,15 @@ $Prev = $Notes->get();			# Get all previous notes (if any)
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Simple Notes</title>
+<?php if (is_dir("$_SERVER[DOCUMENT_ROOT]${Self}lib")) {?>
   <script src="lib/jquery-3.5.1-min.js"></script>
   <script src="lib/bootstrap-4.5.3-min.js"></script>
   <link rel="stylesheet" href="lib/bootstrap-4.5.2-min.css">
+<?php } else {?>
+  <script src="//code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootswatch/4.5.2/flatly/bootstrap.min.css">
+<?php }?>
   <style>
     textarea {
 	resize: vertical; /* allow only vertical stretch */
